@@ -17,10 +17,10 @@ from supabase import create_client
 LOTE = 500
 
 COLUNAS = {
-    "empresa": ("EMPRESA (SIGLA)", "EMPRESA SIGLA", "sg_empresa_icao"),
+    "empresa": ("SIGLA ICAO EMPRESA AÉREA", "SIGLA ICAO EMPRESA AEREA", "EMPRESA (SIGLA)", "EMPRESA SIGLA", "sg_empresa_icao"),
     "voo": ("NÚMERO VOO", "NUMERO VOO", "nr_voo"),
-    "origem": ("ORIGEM", "AEROPORTO ORIGEM", "sg_icao_origem"),
-    "destino": ("DESTINO", "AEROPORTO DESTINO", "sg_icao_destino"),
+    "origem": ("SIGLA ICAO AEROPORTO ORIGEM", "ORIGEM", "AEROPORTO ORIGEM", "sg_icao_origem"),
+    "destino": ("SIGLA ICAO AEROPORTO DESTINO", "DESTINO", "AEROPORTO DESTINO", "sg_icao_destino"),
     "data": ("DT_REFERENCIA", "DT REFERENCIA", "data_referencia"),
     "partida_prevista": ("PARTIDA PREVISTA", "dt_partida_prevista"),
     "partida_real": ("PARTIDA REAL", "dt_partida_real"),
@@ -38,7 +38,11 @@ def chave_coluna(valor: str) -> str:
 
 
 def valor_coluna(linha: dict, campo: str) -> str:
-    normalizada = {chave_coluna(k): (v or "").strip() for k, v in linha.items()}
+    normalizada = {
+        chave_coluna(nome): str(valor or "").strip()
+        for nome, valor in linha.items()
+        if isinstance(nome, str) and not isinstance(valor, (list, dict))
+    }
     for alias in COLUNAS[campo]:
         valor = normalizada.get(chave_coluna(alias))
         if valor is not None:
@@ -94,10 +98,9 @@ def urls_vra(ano_mes: str) -> list[str]:
     ano, mes = ano_mes.split("-")
     arquivo = f"{ano}{mes}.csv"
     return [
+        f"https://siros.anac.gov.br/siros/registros/diversos/vra/{ano}/VRA_{ano}_{mes}.csv",
         "https://sistemas.anac.gov.br/dadosabertos/"
         f"Voos%20e%20opera%C3%A7%C3%B5es/VRA/{ano}/{arquivo}",
-        "https://www.gov.br/anac/pt-br/assuntos/dados-e-estatisticos/"
-        f"dados-estatisticos/arquivos/VRA{ano}{mes}.csv",
     ]
 
 
@@ -111,6 +114,10 @@ def baixar_vra(ano_mes: str) -> list[dict]:
                 continue
             resposta.raise_for_status()
             texto = resposta.content.decode("latin-1", errors="replace")
+            cabecalho = texto.splitlines()[0] if texto.splitlines() else ""
+            if ";" not in cabecalho or "<html" in texto[:500].lower():
+                print("  Resposta recebida não é um CSV VRA válido; tentando a próxima origem.")
+                continue
             linhas = list(csv.DictReader(io.StringIO(texto), delimiter=";"))
             print(f"  VRA carregado: {len(linhas)} linhas brutas")
             return linhas
@@ -140,13 +147,18 @@ def processar(linhas: list[dict], aeroportos: list[str], ano_mes: str) -> list[d
             continue
         empresa = valor_coluna(linha, "empresa").upper()
         voo = valor_coluna(linha, "voo").lstrip("0") or "0"
-        data_referencia = parse_data(valor_coluna(linha, "data"))
-        if not all((empresa, voo, origem, destino, data_referencia)):
-            continue
         partida_prevista = valor_coluna(linha, "partida_prevista")
         partida_real = valor_coluna(linha, "partida_real")
         chegada_prevista = valor_coluna(linha, "chegada_prevista")
         chegada_real = valor_coluna(linha, "chegada_real")
+        data_referencia = parse_data(valor_coluna(linha, "data"))
+        if not data_referencia:
+            data_referencia = next(
+                (valor[:10] for valor in (parse_datahora(partida_prevista), parse_datahora(partida_real)) if valor),
+                None,
+            )
+        if not all((empresa, voo, origem, destino, data_referencia)):
+            continue
         situacao = valor_coluna(linha, "situacao").lower() or None
         registros.append({
             "ano_mes": ano_mes,

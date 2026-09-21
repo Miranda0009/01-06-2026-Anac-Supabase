@@ -22,10 +22,10 @@ spec.loader.exec_module(historico)
 class HistoricoAnacTests(unittest.TestCase):
     def test_processa_linha_com_cabecalhos_acentuados(self):
         linhas = [{
-            "EMPRESA (SIGLA)": "GLO",
+            "SIGLA ICAO EMPRESA AÉREA": "GLO",
             "NÚMERO VOO": "01234",
-            "ORIGEM": "SBCA",
-            "DESTINO": "SBGR",
+            "SIGLA ICAO AEROPORTO ORIGEM": "SBCA",
+            "SIGLA ICAO AEROPORTO DESTINO": "SBGR",
             "DT_REFERENCIA": "02/05/2026",
             "PARTIDA PREVISTA": "02/05/2026 10:00",
             "PARTIDA REAL": "02/05/2026 10:17",
