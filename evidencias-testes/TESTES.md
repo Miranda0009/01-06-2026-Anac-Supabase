@@ -28,6 +28,13 @@ Cobertura verificada:
 | Importar Histórico ANAC/VRA | Concluído com êxito | [run 35639852321](https://github.com/Miranda0009/01-06-2026-Anac-Supabase/actions/runs/35639852321) |
 | Pipeline SIROS → Supabase | Concluído com êxito | [run 35640338602](https://github.com/Miranda0009/01-06-2026-Anac-Supabase/actions/runs/35640338602) |
 
+## Capturas das execuções
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| [importar-historico-sucesso.png](importar-historico-sucesso.png) | Execução `Importar Histórico ANAC/VRA #4` com status **Success**. |
+| [siros-sucesso.png](siros-sucesso.png) | Execução `Pipeline SIROS → Supabase #227` com status **Success**. |
+
 ### Resultado VRA (2025-08)
 
 - CSV oficial lido: 84.584 linhas brutas.
@@ -41,5 +48,5 @@ Cobertura verificada:
 - 1 duplicado foi removido antes do upsert.
 
 As telas de cada execução podem ser abertas diretamente pelos links dos runs,
-que mostram todas as etapas como concluídas. Nenhuma chave ou segredo aparece
-nas evidências.
+e também foram anexadas neste diretório como PNG. Nenhuma chave ou segredo
+aparece nas evidências.
