@@ -26,7 +26,7 @@ class HistoricoAnacTests(unittest.TestCase):
             "NÚMERO VOO": "01234",
             "SIGLA ICAO AEROPORTO ORIGEM": "SBCA",
             "SIGLA ICAO AEROPORTO DESTINO": "SBGR",
-            "DT_REFERENCIA": "02/05/2026",
+            "REFERÊNCIA": "02/05/2026 00:00:00",
             "PARTIDA PREVISTA": "02/05/2026 10:00",
             "PARTIDA REAL": "02/05/2026 10:17",
             "CHEGADA PREVISTA": "02/05/2026 11:00",

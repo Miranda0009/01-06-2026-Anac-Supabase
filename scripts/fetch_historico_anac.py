@@ -21,13 +21,13 @@ COLUNAS = {
     "voo": ("NÚMERO VOO", "NUMERO VOO", "nr_voo"),
     "origem": ("SIGLA ICAO AEROPORTO ORIGEM", "ORIGEM", "AEROPORTO ORIGEM", "sg_icao_origem"),
     "destino": ("SIGLA ICAO AEROPORTO DESTINO", "DESTINO", "AEROPORTO DESTINO", "sg_icao_destino"),
-    "data": ("DT_REFERENCIA", "DT REFERENCIA", "data_referencia"),
+    "data": ("REFERÊNCIA", "REFERENCIA", "DT_REFERENCIA", "DT REFERENCIA", "data_referencia"),
     "partida_prevista": ("PARTIDA PREVISTA", "dt_partida_prevista"),
     "partida_real": ("PARTIDA REAL", "dt_partida_real"),
     "chegada_prevista": ("CHEGADA PREVISTA", "dt_chegada_prevista"),
     "chegada_real": ("CHEGADA REAL", "dt_chegada_real"),
     "situacao": ("SITUAÇÃO DE VOO", "SITUACAO VOO", "situacao"),
-    "motivo": ("MOTIVO", "MOTIVO ALTERACAO", "motivo_alteracao"),
+    "motivo": ("JUSTIFICATIVA", "MOTIVO", "MOTIVO ALTERACAO", "motivo_alteracao"),
 }
 
 
@@ -51,7 +51,7 @@ def valor_coluna(linha: dict, campo: str) -> str:
 
 
 def parse_data(valor: str) -> str | None:
-    for formato in ("%d/%m/%Y", "%Y-%m-%d"):
+    for formato in ("%d/%m/%Y", "%Y-%m-%d", "%d/%m/%Y %H:%M:%S", "%Y-%m-%d %H:%M:%S"):
         try:
             return datetime.strptime((valor or "").strip(), formato).date().isoformat()
         except ValueError:
