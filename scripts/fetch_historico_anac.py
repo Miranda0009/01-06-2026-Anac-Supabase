@@ -113,7 +113,11 @@ def baixar_vra(ano_mes: str) -> list[dict]:
                 print("  Arquivo não encontrado nessa origem; tentando a próxima.")
                 continue
             resposta.raise_for_status()
-            texto = resposta.content.decode("latin-1", errors="replace")
+            try:
+                texto = resposta.content.decode("utf-8-sig")
+            except UnicodeDecodeError:
+                # Alguns arquivos antigos do VRA foram publicados em Latin-1.
+                texto = resposta.content.decode("latin-1", errors="replace")
             cabecalho = texto.splitlines()[0] if texto.splitlines() else ""
             if ";" not in cabecalho or "<html" in texto[:500].lower():
                 print("  Resposta recebida não é um CSV VRA válido; tentando a próxima origem.")

@@ -54,6 +54,9 @@ class HistoricoAnacTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             historico.periodo_requisitado("maio-2026")
 
+    def test_cabecalho_utf8_normaliza_acento(self):
+        self.assertEqual("SIGLA ICAO EMPRESA AEREA", historico.chave_coluna("Sigla ICAO Empresa Aérea"))
+
 
 class SchemaTests(unittest.TestCase):
     def test_migracao_tem_rls_e_privilegios_minimos(self):
