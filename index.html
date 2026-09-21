@@ -410,6 +410,17 @@
       return `${d}/${m}/${y}`;
     }
 
+    function escapeHtml(valor) {
+      const caracteres = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return String(valor).replace(/[&<>"']/g, caractere => caracteres[caractere]);
+    }
+
     function todayIso() {
       return new Date().toLocaleDateString('pt-BR', {
         timeZone: 'America/Sao_Paulo'
@@ -608,14 +619,14 @@
         ? (f.icao_origem || '—')
         : (f.icao_destino || '—');
       const assentos = f.assentos
-        ? `<span class="seats-pill">✦ ${f.assentos}</span>` : '—';
+        ? `<span class="seats-pill">✦ ${escapeHtml(f.assentos)}</span>` : '—';
       return `<tr>
-        <td class="td-time">${horario}</td>
-        <td class="td-flight">${f.icao_empresa || ''}${f.numero_voo || '?'}</td>
-        <td><span class="airline-pill">${f.nome_empresa || '?'}</span></td>
-        <td class="td-muted">${f.equipamento || '—'}</td>
+        <td class="td-time">${escapeHtml(horario)}</td>
+        <td class="td-flight">${escapeHtml(f.icao_empresa || '')}${escapeHtml(f.numero_voo || '?')}</td>
+        <td><span class="airline-pill">${escapeHtml(f.nome_empresa || '?')}</span></td>
+        <td class="td-muted">${escapeHtml(f.equipamento || '—')}</td>
         <td>${assentos}</td>
-        <td class="td-muted">${rota}</td>
+        <td class="td-muted">${escapeHtml(rota)}</td>
         <td>${opBadge(f.tipo_operacao)}</td>
       </tr>`;
     }

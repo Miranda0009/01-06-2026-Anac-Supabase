@@ -13,6 +13,7 @@ Variaveis de ambiente (GitHub Variables):
 
 import json
 import os
+import sys
 from datetime import datetime, timezone, timedelta
 
 import requests
@@ -26,7 +27,7 @@ SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "").strip()
 if not SUPABASE_URL or not SUPABASE_KEY:
     print("[ERRO] SUPABASE_URL e SUPABASE_SERVICE_KEY sao obrigatorios.")
     print("       Configure-os como GitHub Secrets no repositorio.")
-    raise SystemExit(1)
+    sys.exit(1)
 
 db = create_client(SUPABASE_URL, SUPABASE_KEY)
 print(f"Supabase conectado: {SUPABASE_URL}")
@@ -150,6 +151,29 @@ def normalizar_voo(f: dict) -> dict:
     }
 
 
+def deduplicar_registros(registros: list[dict]) -> tuple[list[dict], int]:
+    """Remove voos repetidos pela mesma chave usada no upsert do Supabase."""
+    vistos = set()
+    unicos = []
+    campos_chave = (
+        "data_referencia",
+        "icao_empresa",
+        "numero_voo",
+        "icao_origem",
+        "icao_destino",
+        "etapa",
+    )
+
+    for registro in registros:
+        chave = tuple(registro[campo] for campo in campos_chave)
+        if chave in vistos:
+            continue
+        vistos.add(chave)
+        unicos.append(registro)
+
+    return unicos, len(registros) - len(unicos)
+
+
 # ── Registra execucao no banco ────────────────────────────────────────────────
 
 def registrar_execucao(aeroportos: list, inseridos: int, atualizados: int, status: str, obs: str = "") -> None:
@@ -194,7 +218,9 @@ for f in todos_voos:
 
     registros.append(normalizar_voo(f))
 
+registros, duplicados_removidos = deduplicar_registros(registros)
 print(f"\nVoos filtrados para os aeroportos configurados: {len(registros)}")
+print(f"Duplicados removidos: {duplicados_removidos}")
 
 if registros:
     # Upsert em lotes de 500 para evitar timeout
