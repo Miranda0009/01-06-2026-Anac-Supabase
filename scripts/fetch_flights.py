@@ -1,7 +1,7 @@
 """
-fetch_flights.py — SIROS/ANAC + Supabase v1.0
-Busca voos do dia via API SIROS e insere/atualiza no Supabase.
-Nao salva mais arquivos JSON no repositorio.
+fetch_flights.py — SIROS/ANAC + Supabase v2.0
+Busca voos do dia via API SIROS, remove duplicados e faz upsert no Supabase.
+O log da execução registra voos processados, lotes e falhas.
 
 Variaveis de ambiente (GitHub Secrets):
   SUPABASE_URL         -> URL do projeto Supabase (ex: https://XXXX.supabase.co)
@@ -37,6 +37,7 @@ print(f"Supabase conectado: {SUPABASE_URL}")
 API_BASE     = "https://sas.anac.gov.br/sas/siros_api"
 airports_env = os.environ.get("AIRPORTS", "SBCA")
 AIRPORTS     = [a.strip().upper() for a in airports_env.split(",") if a.strip()]
+LOTE         = 500
 
 BRT      = timezone(timedelta(hours=-3))
 hoje     = datetime.now(BRT)
@@ -176,13 +177,22 @@ def deduplicar_registros(registros: list[dict]) -> tuple[list[dict], int]:
 
 # ── Registra execucao no banco ────────────────────────────────────────────────
 
-def registrar_execucao(aeroportos: list, inseridos: int, atualizados: int, status: str, obs: str = "") -> None:
+def registrar_execucao(
+    aeroportos: list,
+    voos_processados: int,
+    lotes_enviados: int,
+    erros: int,
+    status: str,
+    obs: str = "",
+) -> None:
+    """Registra o resultado do pipeline sem expor credenciais."""
     try:
         db.table("execucoes").insert({
             "concluido_em":       datetime.now(timezone.utc).isoformat(),
             "aeroportos_buscados": aeroportos,
-            "voos_inseridos":     inseridos,
-            "voos_atualizados":   atualizados,
+            "voos_processados":   voos_processados,
+            "lotes_enviados":     lotes_enviados,
+            "erros":              erros,
             "status":             status,
             "observacao":         obs or None,
         }).execute()
@@ -193,12 +203,13 @@ def registrar_execucao(aeroportos: list, inseridos: int, atualizados: int, statu
 # ── Execucao principal ────────────────────────────────────────────────────────
 
 todos_voos = buscar_voos_siros()
-total_inseridos  = 0
-total_atualizados = 0
+total_processados = 0
+total_lotes = 0
+total_erros = 0
 
 if not todos_voos:
     print("\n[AVISO] Nenhum voo retornado. Encerrando.")
-    registrar_execucao(AIRPORTS, 0, 0, "sem_dados", "API SIROS nao retornou voos.")
+    registrar_execucao(AIRPORTS, 0, 0, 0, "sem_dados", "API SIROS nao retornou voos.")
     raise SystemExit(0)
 
 # Filtra apenas voos dos aeroportos configurados e normaliza
@@ -224,26 +235,39 @@ print(f"Duplicados removidos: {duplicados_removidos}")
 
 if registros:
     # Upsert em lotes de 500 para evitar timeout
-    LOTE = 500
     for i in range(0, len(registros), LOTE):
         lote = registros[i:i+LOTE]
         try:
-            resultado = db.table("voos").upsert(
+            db.table("voos").upsert(
                 lote,
                 on_conflict="data_referencia,icao_empresa,numero_voo,icao_origem,icao_destino,etapa"
             ).execute()
-            total_inseridos += len(lote)
-            print(f"  Lote {i//LOTE + 1}: {len(lote)} registros enviados ao Supabase")
+            total_processados += len(lote)
+            total_lotes += 1
+            print(f"  Lote {i//LOTE + 1}: {len(lote)} registros enviados/processados")
         except Exception as e:
+            total_erros += 1
             print(f"  [ERRO] Falha no lote {i//LOTE + 1}: {e}")
+
+if total_erros == 0:
+    status_final = "concluido"
+elif total_processados > 0:
+    status_final = "erro_parcial"
+else:
+    status_final = "erro_critico"
 
 registrar_execucao(
     AIRPORTS,
-    total_inseridos,
-    total_atualizados,
-    "concluido",
-    f"Data: {data_iso} | Aeroportos: {', '.join(AIRPORTS)}"
+    total_processados,
+    total_lotes,
+    total_erros,
+    status_final,
+    f"Data: {data_iso} | Aeroportos: {', '.join(AIRPORTS)} | Duplicados removidos: {duplicados_removidos}"
 )
 
-print(f"\nConcluido — {total_inseridos} registros enviados ao Supabase.")
+print(f"\nConcluido — {total_processados} registros enviados/processados em {total_lotes} lote(s).")
 print(f"Painel: {SUPABASE_URL.replace('https://', 'https://app.supabase.com/project/')}")
+
+if total_erros:
+    print(f"[ATENCAO] {total_erros} lote(s) falharam; o workflow sera marcado como falho.")
+    sys.exit(1)

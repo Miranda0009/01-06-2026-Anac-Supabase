@@ -1,71 +1,63 @@
-# 06-05-2026 — SIROS/ANAC
+# Painel ANAC — SIROS e histórico VRA
 
-Sub-projeto do programa **SN-2026**.  
-Painel de voos programados usando a **API oficial SIROS da ANAC** — sem autenticação, sem custo, sem limites.
+Painel estático publicado no GitHub Pages, alimentado por dois pipelines Python
+que gravam dados oficiais da ANAC no Supabase.
 
-Organização: [github.com/SN-2026](https://github.com/SN-2026)  
-Site: [SN-2026.github.io/06-05-2026-siros](https://SN-2026.github.io/06-05-2026-siros/)
+## Componentes
 
----
+- `scripts/fetch_flights.py`: importa os voos programados do dia pela API SIROS,
+  remove duplicados e registra métricas da execução.
+- `scripts/fetch_historico_anac.py`: importa o VRA (Voo Regular Ativo) de um
+  mês histórico, filtrando os aeroportos definidos em `AIRPORTS`.
+- `.github/workflows/update-flights.yml`: executa a carga SIROS quatro vezes ao dia.
+- `.github/workflows/importar-historico.yml`: executa a carga VRA mensalmente ou
+  sob demanda para um período `YYYY-MM`.
+- `sql/setup.sql`: schema completo para instalações novas.
+- `sql/002_historico_vra.sql`: migração segura para o projeto Supabase já criado.
 
-## O que é o SIROS
+## Configuração no GitHub
 
-O SIROS (Sistema de Registros dos Serviços Aéreos) é o sistema da ANAC onde as companhias aéreas registram obrigatoriamente todos os seus voos programados, conforme a Resolução ANAC nº 440/2017.
+Crie estes Secrets em **Settings → Secrets and variables → Actions**:
 
-A API pública disponibiliza:
+| Nome | Conteúdo |
+| --- | --- |
+| `SUPABASE_URL` | URL do projeto Supabase |
+| `SUPABASE_SERVICE_KEY` | Chave secreta/service-role, usada somente nos workflows |
 
-| Endpoint | O que retorna |
-|---|---|
-| `/api/voos?dataReferencia=DDMMAAAA` | Todos os voos do dia |
-| `/api/voosPeriodo?dataReferenciaInicio=...&dataReferenciaFinal=...` | Voos em um período |
-| `/api/aerodromo?sg_aerodromo_icao_ou_iata=ICAO` | Dados de um aeroporto |
-| `/api/registros` | Todos os registros vigentes |
+Crie a variável `AIRPORTS` com ICAOs separados por vírgula, por exemplo:
 
-## Vantagens em relação à AviationStack
-
-| | AviationStack | **SIROS/ANAC** |
-|---|---|---|
-| Custo | 100 chamadas/mês | **Ilimitado** |
-| Autenticação | API Key obrigatória | **Nenhuma** |
-| Dados extras | Apenas status | **Aeronave, assentos, tipo** |
-| Fonte | Privada | **Oficial do governo** |
-| Cobertura | Mundial | Brasil (100% das rotas regulares) |
-
-## Como configurar
-
-### 1. Criar repositório na organização SN-2026
-`github.com/SN-2026` → New repository → `06-05-2026-siros` → Public
-
-### 2. Fazer upload dos arquivos
-Arraste todos os arquivos deste ZIP para o repositório via interface web.
-
-### 3. Ativar GitHub Pages
-Settings → Pages → Branch: main / (root) → Save
-
-### 4. Configurar a variável AIRPORTS
-Settings → Variables → Actions → New repository variable  
-Nome: `AIRPORTS`  
-Valor: `SBCA,SBGR,SBSP,SBCT,SBGL,SBBR,SBFL,SBPA,SBSV,SBFZ`
-
-> Sem limite de aeroportos — a API é gratuita e pública!
-
-### 5. Executar o workflow
-Actions → Atualizar dados de voos (SIROS/ANAC) → Run workflow
-
-### 6. Acessar o site
-```
-https://SN-2026.github.io/06-05-2026-siros/
+```text
+SBCA,SBGR,SBSP,SBCT,SBGL,SBBR,SBFL,SBPA
 ```
 
-## Execução local
+Nunca coloque a chave secreta no `index.html`, em commits, logs ou capturas.
+O painel público usa somente a chave publishable para leitura.
+
+## Preparação do Supabase
+
+Em um projeto novo, execute `sql/setup.sql` no SQL Editor. Para o projeto já
+existente, execute uma vez `sql/002_historico_vra.sql` antes de disparar a carga
+histórica. A migração cria `historico_vra`, seus índices, RLS, uma política
+pública exclusiva para SELECT e escrita reservada ao `service_role`.
+
+## Testes locais
 
 ```bash
-pip install requests
-python scripts/fetch_flights.py
-
-# Servir localmente
-python -m http.server 8080
+pip install requests supabase
+python -m py_compile scripts/fetch_flights.py scripts/fetch_historico_anac.py
+python -m unittest discover -s tests -v
 ```
 
-## Licença
-MIT
+Os testes não usam credenciais nem escrevem no Supabase. A validação completa é
+feita pelo GitHub Actions após a migração ser aplicada.
+
+## Execução manual
+
+1. Em **Actions**, execute **Pipeline SIROS → Supabase**.
+2. Para histórico, execute **Importar Histórico ANAC/VRA**, informando
+   opcionalmente `ano_mes` como `YYYY-MM`.
+3. Confira `voos`, `historico_vra` e `execucoes` no Supabase.
+
+## Evidências
+
+Os resultados e capturas dos testes ficam em [`evidencias-testes/`](evidencias-testes/).
