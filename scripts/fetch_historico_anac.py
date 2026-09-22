@@ -96,11 +96,19 @@ def periodo_requisitado(valor: str | None) -> str:
 
 def urls_vra(ano_mes: str) -> list[str]:
     ano, mes = ano_mes.split("-")
-    arquivo = f"{ano}{mes}.csv"
+    meses = (
+        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+    )
+    numero_mes = int(mes)
+    pasta = f"{numero_mes:02d}%20-%20{meses[numero_mes - 1]}"
+    arquivo = f"VRA_{ano}{numero_mes}.csv"
     return [
-        f"https://siros.anac.gov.br/siros/registros/diversos/vra/{ano}/VRA_{ano}_{mes}.csv",
         "https://sistemas.anac.gov.br/dadosabertos/"
-        f"Voos%20e%20opera%C3%A7%C3%B5es/VRA/{ano}/{arquivo}",
+        "Voos%20e%20opera%C3%A7%C3%B5es%20a%C3%A9reas/"
+        "Voo%20Regular%20Ativo%20%28VRA%29/"
+        f"{ano}/{pasta}/{arquivo}",
+        f"https://siros.anac.gov.br/siros/registros/diversos/vra/{ano}/VRA_{ano}_{mes}.csv",
     ]
 
 

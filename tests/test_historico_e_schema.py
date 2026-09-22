@@ -57,6 +57,11 @@ class HistoricoAnacTests(unittest.TestCase):
     def test_cabecalho_utf8_normaliza_acento(self):
         self.assertEqual("SIGLA ICAO EMPRESA AEREA", historico.chave_coluna("Sigla ICAO Empresa Aérea"))
 
+    def test_url_vra_2026_usa_diretorio_oficial(self):
+        url = historico.urls_vra("2026-01")[0]
+        self.assertIn("Voo%20Regular%20Ativo%20%28VRA%29/2026/01%20-%20Janeiro/", url)
+        self.assertTrue(url.endswith("VRA_20261.csv"))
+
 
 class SchemaTests(unittest.TestCase):
     def test_migracao_tem_rls_e_privilegios_minimos(self):

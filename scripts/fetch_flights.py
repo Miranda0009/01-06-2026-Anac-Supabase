@@ -152,27 +152,23 @@ def normalizar_voo(f: dict) -> dict:
     }
 
 
-def deduplicar_registros(registros: list[dict]) -> tuple[list[dict], int]:
-    """Remove voos repetidos pela mesma chave usada no upsert do Supabase."""
-    vistos = set()
-    unicos = []
-    campos_chave = (
-        "data_referencia",
-        "icao_empresa",
-        "numero_voo",
-        "icao_origem",
-        "icao_destino",
-        "etapa",
-    )
-
-    for registro in registros:
-        chave = tuple(registro[campo] for campo in campos_chave)
-        if chave in vistos:
-            continue
-        vistos.add(chave)
-        unicos.append(registro)
-
-    return unicos, len(registros) - len(unicos)
+def deduplicar(lista: list) -> list:
+    """Remove duplicatas pela mesma chave protegida pelo upsert."""
+    seen = set()
+    result = []
+    for r in lista:
+        key = (
+            r.get("data_referencia"),
+            r.get("icao_empresa"),
+            r.get("numero_voo"),
+            r.get("icao_origem"),
+            r.get("icao_destino"),
+            r.get("etapa"),
+        )
+        if key not in seen:
+            seen.add(key)
+            result.append(r)
+    return result
 
 
 # ── Registra execucao no banco ────────────────────────────────────────────────
@@ -229,7 +225,12 @@ for f in todos_voos:
 
     registros.append(normalizar_voo(f))
 
-registros, duplicados_removidos = deduplicar_registros(registros)
+print("\nObs: o upsert usa a constraint de unicidade da tabela voos.")
+antes = len(registros)
+registros = deduplicar(registros)
+duplicados_removidos = antes - len(registros)
+if duplicados_removidos:
+    print(f"  Deduplicação: {duplicados_removidos} registro(s) duplicado(s) removido(s) antes do envio")
 print(f"\nVoos filtrados para os aeroportos configurados: {len(registros)}")
 print(f"Duplicados removidos: {duplicados_removidos}")
 

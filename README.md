@@ -14,6 +14,7 @@ que gravam dados oficiais da ANAC no Supabase.
   sob demanda para um período `YYYY-MM`.
 - `sql/setup.sql`: schema completo para instalações novas.
 - `sql/002_historico_vra.sql`: migração segura para o projeto Supabase já criado.
+- `docs/CONSULTAS_BANCO.md`: consultas realizadas no Supabase e resultados de validação.
 
 ## Configuração no GitHub
 

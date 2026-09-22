@@ -8,7 +8,7 @@ Data: 21/09/2026
 python -m py_compile scripts/fetch_flights.py scripts/fetch_historico_anac.py
 python -m unittest discover -s tests -v
 
-Ran 6 tests
+Ran 7 tests
 OK
 ```
 
@@ -20,6 +20,10 @@ Cobertura verificada:
 - rejeição de período inválido;
 - RLS e privilégios mínimos na migração;
 - workflow chamando o importador histórico.
+- URL VRA 2026 apontando para o diretório oficial da ANAC.
+
+Também foi verificado o acesso ao CSV público de janeiro de 2026 da ANAC:
+`VRA_20261.csv` respondeu **HTTP 200**.
 
 ## Testes integrados no GitHub Actions
 

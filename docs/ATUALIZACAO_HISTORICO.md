@@ -17,6 +17,12 @@ registra `concluido`, `erro_parcial` ou `erro_critico`; qualquer lote com erro
 encerra o workflow com código diferente de zero, tornando a falha visível no
 GitHub Actions.
 
+## Fonte VRA atualizada
+
+O importador histórico prioriza o diretório oficial da ANAC para 2026, usando a
+estrutura `Voo Regular Ativo (VRA)/AAAA/MM - Mês/VRA_AAAAM.csv`. A origem SIROS
+permanece como alternativa para períodos que ainda usem o formato anterior.
+
 ## Segurança
 
 - A chave de escrita permanece apenas em GitHub Secrets.
